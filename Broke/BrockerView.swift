@@ -3,6 +3,7 @@
 //  Broke
 //
 //  Created by Oz Tamir on 22/08/2024.
+//  Modified by OpenClaw
 //
 import SwiftUI
 import CoreNFC
@@ -14,11 +15,11 @@ struct BrokerView: View {
     @EnvironmentObject private var appBlocker: AppBlocker
     @EnvironmentObject private var profileManager: ProfileManager
     @StateObject private var nfcReader = NFCReader()
-    private let tagPhrase = "BROKE-IS-GREAT"
+    
+    // Persist the UID of the locking tag
+    @AppStorage("lockedTagID") private var lockedTagID: String = ""
     
     @State private var showWrongTagAlert = false
-    @State private var showCreateTagAlert = false
-    @State private var nfcWriteSuccess = false
     
     private var isBlocking : Bool {
         get {
@@ -44,24 +45,13 @@ struct BrokerView: View {
                     .background(isBlocking ? Color("BlockingBackground") : Color("NonBlockingBackground"))
                 }
             }
-            .navigationBarItems(trailing: createTagButton)
+            // Removed trailing Create Tag button as any tag works now
             .alert(isPresented: $showWrongTagAlert) {
                 Alert(
-                    title: Text("Not a Broker Tag"),
-                    message: Text("You can create a new Broker tag using the + button"),
+                    title: Text("Wrong Tag"),
+                    message: Text("This tag does not match the one used to lock."),
                     dismissButton: .default(Text("OK"))
                 )
-            }
-            .alert("Create Broker Tag", isPresented: $showCreateTagAlert) {
-                Button("Create") { createBrokerTag() }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Do you want to create a new Broker tag?")
-            }
-            .alert("Tag Creation", isPresented: $nfcWriteSuccess) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(nfcWriteSuccess ? "Broker tag created successfully!" : "Failed to create Broker tag. Please try again.")
             }
         }
         .animation(.spring(), value: isBlocking)
@@ -70,7 +60,7 @@ struct BrokerView: View {
     @ViewBuilder
     private func blockOrUnblockButton(geometry: GeometryProxy) -> some View {
         VStack(spacing: 8) {
-            Text(isBlocking ? "Tap to unblock" : "Tap to block")
+            Text(statusText)
                 .font(.caption)
                 .opacity(0.75)
                 .transition(.scale)
@@ -92,31 +82,32 @@ struct BrokerView: View {
         .animation(.spring(), value: isBlocking)
     }
     
+    private var statusText: String {
+        if isBlocking {
+            return "Scan the lock tag to unblock"
+        } else {
+            return "Scan any tag to lock"
+        }
+    }
+    
     private func scanTag() {
-        nfcReader.scan { payload in
-            if payload == tagPhrase {
-                NSLog("Toggling block")
-                appBlocker.toggleBlocking(for: profileManager.currentProfile)
+        nfcReader.scan { uid in
+            if isBlocking {
+                // Verification Mode: Check if scanned UID matches the lock UID
+                if uid == lockedTagID {
+                    NSLog("Unblocking with correct tag")
+                    appBlocker.toggleBlocking(for: profileManager.currentProfile)
+                    lockedTagID = "" // Clear lock so a different tag can be used next time
+                } else {
+                    showWrongTagAlert = true
+                    NSLog("Wrong Tag! Expected: \(lockedTagID), Got: \(uid)")
+                }
             } else {
-                showWrongTagAlert = true
-                NSLog("Wrong Tag!\nPayload: \(payload)")
+                // Registration/Lock Mode: Register the scanned tag as the key
+                NSLog("Locking with tag: \(uid)")
+                lockedTagID = uid
+                appBlocker.toggleBlocking(for: profileManager.currentProfile)
             }
-        }
-    }
-    
-    private var createTagButton: some View {
-        Button(action: {
-            showCreateTagAlert = true
-        }) {
-            Image(systemName: "plus")
-        }
-        .disabled(!NFCNDEFReaderSession.readingAvailable)
-    }
-    
-    private func createBrokerTag() {
-        nfcReader.write(tagPhrase) { success in
-            nfcWriteSuccess = !success
-            showCreateTagAlert = false
         }
     }
 }

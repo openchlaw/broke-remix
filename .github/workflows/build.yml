@@ -15,6 +15,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set Default Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_15.4.app
+
       - name: Build App
         run: |
           xcodebuild clean build \

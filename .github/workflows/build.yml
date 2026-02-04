@@ -1,0 +1,55 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: Build and Archive
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_15.2.app
+
+      - name: Build App
+        run: |
+          xcodebuild clean build \
+            -project Broke.xcodeproj \
+            -scheme Broke \
+            -destination "generic/platform=iOS" \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project Broke.xcodeproj \
+            -scheme Broke \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath build/Broke.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Export IPA (Payload-only method for unsigned)
+        run: |
+          mkdir -p build/Payload
+          cp -r build/Broke.xcarchive/Products/Applications/Broke.app build/Payload/
+          cd build
+          zip -r Broke.ipa Payload
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Broke-iOS-Unsigned
+          path: build/Broke.ipa

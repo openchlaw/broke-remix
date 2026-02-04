@@ -1,44 +1,68 @@
 <div align="center">
-  <a href="https://github.com/OzTamir/broke">
-    <img src="Icon.png" alt="Logo" style="height:100px; width:100px">
-  </a>
+  <img src="Icon.png" alt="Logo" style="height:100px; width:100px">
 
-  <h3 align="center">Broke</h3>
+  <h3 align="center">Broke Remix</h3>
 
   <p align="center">
-    Open Source iOS App for Minimalist Smartphone Use
+    <strong>An advanced fork of Broke: Turn ANY NFC tag into a physical key for your phone.</strong>
     <br />
     <br />
-    <a href="https://github.com/OzTamir/broke/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/OzTamir/broke/issues">Request Feature</a>
+    <a href="https://github.com/openchlaw/broke-remix/issues">Report Bug</a>
   </p>
 </div>
-Welcome to Broke, an open-source alternative to Brick that lets you experience minimalist smartphone use.
-Inspired by Brick's mission to help users reduce distractions, Broke offers a streamlined approach to limiting your smartphone's functionality.
 
-### Acknowledgments
-While Broke is a fully functional app, if you find value in this concept and want a polished experience, consider supporting the original creators by purchasing Brick [here](https://getbrick.app/shop).
+**Broke Remix** is a privacy-focused, open-source iOS application that allows you to "brick" your phone (block distracting apps) using physical objects. 
 
-Out of respect to the original team, Broke is not available on the app store for download - I created it for open-source hobbists.
+Unlike the original, this version **does not require writing data to NFC tags**. It reads the unique hardware UID of *any* NFC chip—credit cards, transit passes, key fobs, Amiibos, or even your passport—and turns it into a physical key.
 
-## Features
-* Minimalist interface
-* Open-source, customizable codebase
-* Supports multiple profiles
-* Allows creating a Broke-compatible tags (requires a physical tag)
+## 🚀 Key Features (Remix)
 
-## Creating a Broke tag
-To create a tag, you need to get a physical NFC tag - any tag compatible with iOS will do the trick - I used an NTAG213.
+*   **Universal Tag Support:** Works with read-only, encrypted, or unformatted tags. If it has an NFC chip, it's a key.
+*   **Dynamic Locking:** 
+    *   **To Lock:** Tap the app, then scan *any* tag. That specific tag becomes the only key.
+    *   **To Unlock:** You must scan that *exact* same tag again.
+*   **Native iOS Design:** A complete UI overhaul featuring Apple-like aesthetics, haptic feedback, and fluid animations.
+*   **Profile Management:** Create multiple blocking profiles (e.g., "Deep Work", "Sleep Mode") with different app/category restrictions.
+*   **Privacy First:** Uses Apple's Screen Time API. No data leaves your device.
 
-I also created a 3D-printable model to carry tags around or stick them on the fridge - check it out [here](https://www.printables.com/model/983618-broke-tag-nfc-tag-cover-with-keychain-and-magnet-h).
+## 🛠 Prerequisites
 
-![tag](https://github.com/user-attachments/assets/7c961db0-7746-46c3-8fd2-17739ead49c1)
+*   **Mac with Xcode 15+**
+*   **iPhone with iOS 16.0+** (Required for FamilyControls/DeviceActivity APIs)
+*   **Apple Developer Account** (Free tier works for 7-day provisioning, Paid for permanent)
 
-Once you have a tag, you can use the interface of the Broke up to turn it into a tag - it will write a simple phrase that can be detected by the app to block/unblock.
+## 📦 Installation
 
-## Getting Started
-To use Broke, follow these steps:
-* Clone the repository.
-* Open the project in Xcode.
-* Build and run the app on your iOS device.
+1.  **Clone the Repo**
+    ```bash
+    git clone https://github.com/openchlaw/broke-remix.git
+    cd broke-remix/broke
+    ```
+
+2.  **Open in Xcode**
+    Double-click `Broke.xcodeproj`.
+
+3.  **Configure Signing**
+    *   Click on the "Broke" project in the navigator.
+    *   Select the "Broke" target.
+    *   Go to **Signing & Capabilities**.
+    *   Select your Team.
+    *   Change the **Bundle Identifier** to something unique (e.g., `com.yourname.broke`).
+
+4.  **Build & Run**
+    *   Connect your iPhone.
+    *   Select your device as the run destination.
+    *   Hit `Cmd+R`.
+
+5.  **Authorize Screen Time**
+    *   On first launch, the app will ask for permission to access Screen Time. You must click "Continue" and "Allow" to enable blocking functionality.
+
+## ⚠️ Important Notes
+
+*   **Don't lose your key!** If you lock your phone with a tag and lose it, you will have to restart your device or delete the app to regain access to blocked apps.
+*   **Background Scanning:** The app must be open (foreground) to lock/unlock. Passive background NFC reading is not supported for this specific security model.
+
+## Credits
+
+Based on the original [Broke](https://github.com/OzTamir/broke) by Oz Tamir.
+Inspired by [Brick](https://getbrick.app/).

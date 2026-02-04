@@ -11,128 +11,108 @@ import FamilyControls
 
 struct ProfilesPicker: View {
     @ObservedObject var profileManager: ProfileManager
+    @Environment(\.dismiss) var dismiss
+    
     @State private var showAddProfileView = false
     @State private var editingProfile: Profile?
     
-    let columns = [GridItem(.adaptive(minimum: 100), spacing: 16)]
-    
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Select Profile")
-                .font(.headline)
-                .padding()
-            
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 16) {
+        NavigationView {
+            List {
+                Section {
                     ForEach(profileManager.profiles) { profile in
-                        ProfileCell(
-                            profile: profile,
-                            isSelected: profile.id == profileManager.currentProfileId
-                        )
-                        .onTapGesture {
-                            withAnimation {
-                                profileManager.setCurrentProfile(id: profile.id)
+                        Button(action: {
+                            profileManager.setCurrentProfile(id: profile.id)
+                            Haptics.selection()
+                            dismiss()
+                        }) {
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(profile.id == profileManager.currentProfileId ? Color.blue : Color.gray.opacity(0.1))
+                                        .frame(width: 40, height: 40)
+                                    
+                                    Image(systemName: profile.icon)
+                                        .foregroundColor(profile.id == profileManager.currentProfileId ? .white : .blue)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(profile.name)
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text("\(profile.appTokens.count) Apps • \(profile.categoryTokens.count) Categories")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                if profile.id == profileManager.currentProfileId {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                profileManager.deleteProfile(withId: profile.id)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            
+                            Button {
+                                editingProfile = profile
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(.orange)
+                        }
+                        .contextMenu {
+                            Button {
+                                editingProfile = profile
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                profileManager.deleteProfile(withId: profile.id)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
                         }
-                        .onLongPressGesture {
-                            editingProfile = profile
-                        }
                     }
-                    
-                    // "Add New" Button
-                    AddProfileCell()
-                        .onTapGesture {
-                            showAddProfileView = true
-                        }
+                } header: {
+                    Text("Select a Profile")
                 }
-                .padding(.horizontal)
-                .padding(.bottom)
+                
+                Section {
+                    Button(action: { showAddProfileView = true }) {
+                        Label("Create New Profile", systemImage: "plus.circle.fill")
+                            .foregroundColor(.blue)
+                    }
+                }
             }
-            
-            Divider()
-            
-            Text("Long press a profile to edit")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-        }
-        .background(Color(Constants.Colors.profileSectionBackground))
-        // Edit Sheet
-        .sheet(item: $editingProfile) { profile in
-            ProfileFormView(profile: profile, profileManager: profileManager) {
-                editingProfile = nil
+            .listStyle(.insetGrouped)
+            .navigationTitle("Profiles")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+            .sheet(item: $editingProfile) { profile in
+                ProfileFormView(profile: profile, profileManager: profileManager) {
+                    editingProfile = nil
+                }
+            }
+            .sheet(isPresented: $showAddProfileView) {
+                ProfileFormView(profileManager: profileManager) {
+                    showAddProfileView = false
+                }
             }
         }
-        // Add Sheet
-        .sheet(isPresented: $showAddProfileView) {
-            ProfileFormView(profileManager: profileManager) {
-                showAddProfileView = false
-            }
-        }
-    }
-}
-
-// MARK: - Subviews
-
-struct ProfileCell: View {
-    let profile: Profile
-    let isSelected: Bool
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: profile.icon)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 32, height: 32)
-                .foregroundColor(isSelected ? .white : .primary)
-            
-            Text(profile.name)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .lineLimit(1)
-                .foregroundColor(isSelected ? .white : .primary)
-            
-            HStack(spacing: 4) {
-                Label("\(profile.appTokens.count)", systemImage: "app")
-                Text("|")
-                Label("\(profile.categoryTokens.count)", systemImage: "folder")
-            }
-            .font(.caption2)
-            .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
-        }
-        .frame(height: 100)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isSelected ? Color.blue : Color(UIColor.secondarySystemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.blue, lineWidth: isSelected ? 2 : 0)
-        )
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-}
-
-struct AddProfileCell: View {
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: Constants.Icons.addIcon)
-                .font(.largeTitle)
-                .foregroundColor(.blue)
-            
-            Text("New Profile")
-                .font(.subheadline)
-                .foregroundColor(.blue)
-        }
-        .frame(height: 100)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(style: StrokeStyle(lineWidth: 2, dash: [6]))
-                .foregroundColor(.blue.opacity(0.5))
-        )
-        .background(Color.blue.opacity(0.05).cornerRadius(12))
     }
 }
